@@ -99,7 +99,7 @@ function initGL() {
 
     gl.bindTexture(gl.TEXTURE_2D, lastState);//original texture
 
-    this.render();
+    render();
 }
 
 function makeRandomArray(rgba){
