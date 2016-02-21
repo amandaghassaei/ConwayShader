@@ -17,8 +17,9 @@ var height;
 
 var flipYLocation;
 var textureSizeLocation;
+var mouseCoordLocation;
 
-var paused = false;
+var paused = false;//while window is resizing
 
 window.onload = initGL;
 
@@ -28,6 +29,8 @@ function initGL() {
     canvas = document.getElementById("glcanvas");
     canvas.width = canvas.clientWidth;
     canvas.height = canvas.clientHeight;
+
+    canvas.onmousemove = onMouseMove;
 
     window.onresize = onResize;
 
@@ -64,11 +67,12 @@ function initGL() {
     //flip y
     flipYLocation = gl.getUniformLocation(program, "u_flipY");
 
-
     //set texture location
     var texCoordLocation = gl.getAttribLocation(program, "a_texCoord");
 
     textureSizeLocation = gl.getUniformLocation(program, "u_textureSize");
+
+    mouseCoordLocation = gl.getUniformLocation(program, "u_mouseCoord");
 
     // provide texture coordinates for the rectangle.
     var texCoordBuffer = gl.createBuffer();
@@ -100,7 +104,7 @@ function initGL() {
 
 function makeRandomArray(rgba){
     var numPixels = rgba.length/4;
-    var probability = 0.2;
+    var probability = 0.15;
     for (var i=0;i<numPixels;i++) {
         var ii = i * 4;
         var state = Math.random() < probability ? 1 : 0;
@@ -194,4 +198,8 @@ function onResize(){
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, makeRandomArray(rgba));
 
     paused = false;
+}
+
+function onMouseMove(e){
+    gl.uniform2f(mouseCoordLocation, e.clientX/width, e.clientY/height);
 }
