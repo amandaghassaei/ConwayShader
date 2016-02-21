@@ -9,10 +9,16 @@ var lastState;
 var currentState;
 var frameBuffer;
 
+var resizedLastState;
+var resizedCurrentState;
+
 var width;
 var height;
 
 var flipYLocation;
+var textureSizeLocation;
+
+var paused = false;
 
 window.onload = initGL;
 
@@ -20,10 +26,11 @@ function initGL() {
 
     // Get A WebGL context
     canvas = document.getElementById("glcanvas");
-    canvas.width = 400;
-    canvas.height = 300;
-    canvas.clientWidth = 400;
-    canvas.clientHeight = 300;
+    canvas.width = canvas.clientWidth;
+    canvas.height = canvas.clientHeight;
+
+    window.onresize = onResize;
+
     gl = canvas.getContext("experimental-webgl");
     if (!gl) {
         alert('Could not initialize WebGL, try another browser');
@@ -31,10 +38,6 @@ function initGL() {
     }
 
     gl.disable(gl.DEPTH_TEST);
-
-    var devicePixelRatio = window.devicePixelRatio || 1;
-    width = canvas.clientWidth * devicePixelRatio;
-    height = canvas.clientHeight * devicePixelRatio;
 
     // setup a GLSL program
     var program = createProgramFromScripts(gl, "2d-vertex-shader", "2d-fragment-shader");
@@ -65,9 +68,7 @@ function initGL() {
     //set texture location
     var texCoordLocation = gl.getAttribLocation(program, "a_texCoord");
 
-    var textureSizeLocation = gl.getUniformLocation(program, "u_textureSize");
-    // set the size of the texture
-    gl.uniform2f(textureSizeLocation, width, height);
+    textureSizeLocation = gl.getUniformLocation(program, "u_textureSize");
 
     // provide texture coordinates for the rectangle.
     var texCoordBuffer = gl.createBuffer();
@@ -83,14 +84,12 @@ function initGL() {
     gl.vertexAttribPointer(texCoordLocation, 2, gl.FLOAT, false, 0, 0);
 
 
-    //texture for saving output from frag shader
-    currentState = makeTexture(gl);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+    onResize();
 
-    lastState = makeTexture(gl);
-    //fill with random pixels
-    var rgba = new Uint8Array(width*height*4);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, makeRandomArray(rgba));
+    lastState = resizedLastState;
+    currentState = resizedCurrentState;
+    resizedLastState = null;
+    resizedCurrentState = null;
 
     frameBuffer = gl.createFramebuffer();
 
@@ -115,8 +114,6 @@ function makeTexture(gl){
 
     var texture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, texture);
-    texture.height = canvas.height;
-    texture.width = canvas.width;
 
     // Set the parameters so we can render any size image.
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -129,24 +126,32 @@ function makeTexture(gl){
 
 function render(){
 
-    //for (var i=1;i<10;i++){
-    //    step();
-    //}
-    // don't y flip images while drawing to the textures
-    gl.uniform1f(flipYLocation, 1);
+    if (!paused) {
 
-    step();
+        if (resizedLastState) {
+            lastState = resizedLastState;
+            resizedLastState = null;
+        }
+        if (resizedCurrentState) {
+            currentState = resizedCurrentState;
+            resizedCurrentState = null;
+        }
+
+        // don't y flip images while drawing to the textures
+        gl.uniform1f(flipYLocation, 1);
+
+        step();
 
 
-    gl.uniform1f(flipYLocation, -1);  // need to y flip for canvas
-    gl.bindTexture(gl.TEXTURE_2D, lastState);
+        gl.uniform1f(flipYLocation, -1);  // need to y flip for canvas
+        gl.bindTexture(gl.TEXTURE_2D, lastState);
 
 
-    //draw to canvas
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    //gl.viewport(0, 0, width, height);
-    gl.bindTexture(gl.TEXTURE_2D, lastState);
-    gl.drawArrays(gl.TRIANGLES, 0, 6);
+        //draw to canvas
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        gl.bindTexture(gl.TEXTURE_2D, lastState);
+        gl.drawArrays(gl.TRIANGLES, 0, 6);
+    }
 
 
 
@@ -158,11 +163,35 @@ function step(){
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, currentState, 0);
 
     gl.bindTexture(gl.TEXTURE_2D, lastState);
-    //gl.viewport(0, 0, width, height);
 
     gl.drawArrays(gl.TRIANGLES, 0, 6);//draw to framebuffer
 
     var temp = lastState;
     lastState = currentState;
     currentState = temp;
+}
+
+function onResize(){
+    paused = true;
+
+    canvas.width = canvas.clientWidth;
+    canvas.height = canvas.clientHeight;
+    width = canvas.clientWidth;
+    height = canvas.clientHeight;
+
+    gl.viewport(0, 0, width, height);
+
+    // set the size of the texture
+    gl.uniform2f(textureSizeLocation, width, height);
+
+    //texture for saving output from frag shader
+    resizedCurrentState = makeTexture(gl);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+
+    resizedLastState = makeTexture(gl);
+    //fill with random pixels
+    var rgba = new Uint8Array(width*height*4);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, makeRandomArray(rgba));
+
+    paused = false;
 }
