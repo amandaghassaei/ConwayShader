@@ -1,7 +1,12 @@
 # ConwayShader
 WebGL Shader for Conway's Game of Life
 
-Bare-bones implementation of a Conway's Game of Life shader in WebGL.  No external libraries used.
-Dynamic window resizing and mouse move interaction, easily runs at 60fps.
+<img src="conway.png" style="width:800px">
 
-Demo at http://git.amandaghassaei.com/ConwayShader/
+Live Demo at http://git.amandaghassaei.com/ConwayShader/
+
+Bare-bones implementation of <a href="https://en.wikipedia.org/wiki/Conway's_Game_of_Life" target="_blank">Conway's Game of Life</a> in a WebGL fragment shader.  
+No external libraries used.
+Supports dynamic window resizing and mouse move interactions, easily runs at 60fps.
+
+

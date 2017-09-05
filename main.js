@@ -34,11 +34,20 @@ function initGL() {
 
     window.onresize = onResize;
 
-    gl = canvas.getContext("experimental-webgl");
+    gl = canvas.getContext("webgl", { antialias: false}) || canvas.getContext("experimental-webgl", { antialias: false});
     if (!gl) {
         alert('Could not initialize WebGL, try another browser');
         return;
     }
+
+    //setpixelated(canvas.getContext('2d'));
+    //function setpixelated(context){
+    //    context['imageSmoothingEnabled'] = false;       /* standard */
+    //    context['mozImageSmoothingEnabled'] = false;    /* Firefox */
+    //    context['oImageSmoothingEnabled'] = false;      /* Opera */
+    //    context['webkitImageSmoothingEnabled'] = false; /* Safari */
+    //    context['msImageSmoothingEnabled'] = false;     /* IE */
+    //}
 
     gl.disable(gl.DEPTH_TEST);
 
