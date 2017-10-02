@@ -31,6 +31,7 @@ function initGL() {
     canvas.height = canvas.clientHeight;
 
     canvas.onmousemove = onMouseMove;
+    canvas.ontouchmove = onTouchMove;
 
     window.onresize = onResize;
 
@@ -211,4 +212,10 @@ function onResize(){
 
 function onMouseMove(e){
     gl.uniform2f(mouseCoordLocation, e.clientX/width, e.clientY/height);
+}
+
+function onTouchMove(e){
+    e.preventDefault();
+    var touch = e.touches[0];
+    gl.uniform2f(mouseCoordLocation, touch.pageX/width, touch.pageY/height);
 }
