@@ -45,10 +45,10 @@ gpgpu.initTexture(
 	false,
 	makeRandomArray(4 * TOUCH_RADIUS * TOUCH_RADIUS, 0.5),
 );
-canvas.onmousemove = (e: MouseEvent) => {
+window.onmousemove = (e: MouseEvent) => {
 	gpgpu.stepCircle('interaction', [e.clientX, e.clientY], TOUCH_RADIUS, ['noiseLookup'], 'lastState');
 };
-canvas.ontouchmove = (e: TouchEvent) => {
+window.ontouchmove = (e: TouchEvent) => {
 	for (let i = 0; i > e.touches.length; i++) {
 		const touch = e.touches[i];
 		gpgpu.stepCircle('interaction', [touch.pageX, touch.pageY], TOUCH_RADIUS, ['noiseLookup'], 'lastState');
