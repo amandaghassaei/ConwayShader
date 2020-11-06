@@ -11,7 +11,7 @@ void main() {
 	for (int i = -1; i < 2; i++) {
 		for (int j =- 1; j < 2; j++) {
 			if (i == 0 && j == 0) continue;
-			vec2 neighborUV = uv + vec2(u_pxSize.x * float(i), u_pxSize.y * float(j)); // TODO: need float()?
+			vec2 neighborUV = uv + vec2(u_pxSize.x * float(i), u_pxSize.y * float(j));
 			if (texture2D(u_state, neighborUV).r == 1.0) count++;
 		}
 	}
