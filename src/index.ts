@@ -49,6 +49,7 @@ window.onmousemove = (e: MouseEvent) => {
 	gpgpu.stepCircle('interaction', [e.clientX, e.clientY], TOUCH_RADIUS, ['noiseLookup'], 'lastState');
 };
 window.ontouchmove = (e: TouchEvent) => {
+	e.preventDefault();
 	for (let i = 0; i < e.touches.length; i++) {
 		const touch = e.touches[i];
 		gpgpu.stepCircle('interaction', [touch.pageX, touch.pageY], TOUCH_RADIUS, ['noiseLookup'], 'lastState');
