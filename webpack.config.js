@@ -8,6 +8,9 @@ module.exports = {
     hot: true,
     liveReload: true,
   },
+  performance: {
+    hints: false
+  },
   module: {
     rules: [
       {
