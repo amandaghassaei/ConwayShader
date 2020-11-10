@@ -1,17 +1,17 @@
 precision lowp float;
 
-varying vec2 uv;
+varying vec2 vUV;
 uniform sampler2D u_state;
 uniform vec2 u_pxSize;
 
 void main() {
-	float currentState = texture2D(u_state, uv).r;
+	float currentState = texture2D(u_state, vUV).r;
 
 	int count = 0;
 	for (int i = -1; i < 2; i++) {
 		for (int j =- 1; j < 2; j++) {
 			if (i == 0 && j == 0) continue;
-			vec2 neighborUV = uv + vec2(u_pxSize.x * float(i), u_pxSize.y * float(j));
+			vec2 neighborUV = vUV + vec2(u_pxSize.x * float(i), u_pxSize.y * float(j));
 			if (texture2D(u_state, neighborUV).r == 1.0) count++;
 		}
 	}

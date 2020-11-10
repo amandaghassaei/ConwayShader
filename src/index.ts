@@ -7,7 +7,7 @@ const canvas = document.getElementById('glcanvas')  as HTMLCanvasElement;
 const gpgpu = new GPGPU(null, canvas);
 
 // Init programs.
-gpgpu.initProgram('gol', golShaderSource, [
+const gol = gpgpu.initProgram('gol', golShaderSource, [
 	{
 		name: 'u_state',
 		value: 0,
@@ -19,14 +19,14 @@ gpgpu.initProgram('gol', golShaderSource, [
 		dataType: 'FLOAT',
 	},
 ]);
-gpgpu.initProgram('render', renderShaderSource, [
+const render = gpgpu.initProgram('render', renderShaderSource, [
 	{
 		name: 'u_state',
 		value: 0,
 		dataType: 'INT',
 	},
 ]);
-gpgpu.initProgram('interaction', interactionShaderSource, [
+const interaction = gpgpu.initProgram('interaction', interactionShaderSource, [
 	{
 		name: 'u_noiseLookup',
 		value: 0,
@@ -43,26 +43,45 @@ function makeRandomArray(length: number, probability = 0.1) {
 	return array;
 }
 
+// Init state.
+const state = gpgpu.initDataLayer('state', {
+	width: canvas.clientWidth,
+	height: canvas.clientHeight,
+	type: 'uint8',
+	numChannels: 1,
+	data: makeRandomArray(canvas.clientWidth * canvas.clientHeight),
+}, true, 2); // Use two buffers, one for this state, one for last state.
+onResize();
+window.addEventListener('resize', onResize);
+function onResize() {
+	// Re-init textures at new size.
+	const width = canvas.clientWidth;
+	const height = canvas.clientHeight;
+	state.resize(width, height, makeRandomArray(width * height));
+	gol.setUniform('u_pxSize', [1 / width, 1 / height], 'FLOAT');
+	gpgpu.onResize(canvas);
+}
+
 // Set up interactions.
 const TOUCH_RADIUS = 10;
 // Create a lookup texture for adding noise on interaction.
-gpgpu.initTexture(
-	'noiseLookup',
-	TOUCH_RADIUS * 2,
-	TOUCH_RADIUS * 2,
-	'uint8',
-	1,
-	false,
-	makeRandomArray(4 * TOUCH_RADIUS * TOUCH_RADIUS, 0.5),
+const noise = gpgpu.initDataLayer('noise',
+	{
+		width: TOUCH_RADIUS * 2,
+		height: TOUCH_RADIUS * 2,
+		type: 'uint8',
+		numChannels: 1,
+		data: makeRandomArray(4 * TOUCH_RADIUS * TOUCH_RADIUS, 0.5),
+	},
 );
 canvas.addEventListener('mousemove', (e: MouseEvent) => {
-	gpgpu.stepCircle('interaction', [e.clientX, e.clientY], TOUCH_RADIUS, ['noiseLookup'], 'lastState');
+	gpgpu.stepCircle(interaction, [e.clientX, e.clientY], TOUCH_RADIUS, [noise], state);
 });
 canvas.addEventListener('touchmove', (e: TouchEvent) => {
 	e.preventDefault();
 	for (let i = 0; i < e.touches.length; i++) {
 		const touch = e.touches[i];
-		gpgpu.stepCircle('interaction', [touch.pageX, touch.pageY], TOUCH_RADIUS, ['noiseLookup'], 'lastState');
+		gpgpu.stepCircle(interaction, [touch.pageX, touch.pageY], TOUCH_RADIUS, [noise], state);
 	}
 });
 // Disable other gestures.
@@ -79,28 +98,13 @@ function disableZoom(e: Event) {
 	document.body.style.transform = scale;
 }
 
-onResize();
-window.addEventListener('resize', onResize);
-function onResize() {
-	// Re-init textures at new size.
-	const width = canvas.clientWidth;
-	const height = canvas.clientHeight;
-	const data = makeRandomArray(width * height);
-	gpgpu.initTexture('currentState', width, height, 'uint8', 1, true, undefined, true);
-	gpgpu.initTexture('lastState', width, height, 'uint8', 1, true, data, true);
-	gpgpu.setProgramUniform('gol', 'u_pxSize', [1 / width, 1 / height], 'FLOAT');
-	gpgpu.onResize(canvas);
-}
-
 // Start render loop.
 window.requestAnimationFrame(step);
 function step() {
 	// Compute rules.
-	gpgpu.step('gol', ['lastState'], 'currentState');
+	gpgpu.step(gol, [state], state);
 	// Render current state.
-	gpgpu.step('render', ['currentState']);
-	// Toggle textures.
-	gpgpu.swapTextures('currentState', 'lastState');
+	gpgpu.step(render, [state]);
 	// Start a new render cycle.
 	window.requestAnimationFrame(step);
 }
