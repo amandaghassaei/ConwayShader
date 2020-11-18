@@ -1,13 +1,13 @@
-import { GPGPU } from 'webgl-gpgpu';
+import { GLCompute } from 'glcompute';
 const golShaderSource = require('./kernels/GOLShader.glsl');
 const renderShaderSource = require('./kernels/RenderShader.glsl');
 const interactionShaderSource = require('./kernels/InteractionShader.glsl');
 
 const canvas = document.getElementById('glcanvas')  as HTMLCanvasElement;
-const gpgpu = new GPGPU(null, canvas);
+const glcompute = new GLCompute(null, canvas, { antialias: false });
 
 // Init programs.
-const gol = gpgpu.initProgram('gol', golShaderSource, [
+const gol = glcompute.initProgram('gol', golShaderSource, [
 	{
 		name: 'u_state',
 		value: 0,
@@ -19,14 +19,14 @@ const gol = gpgpu.initProgram('gol', golShaderSource, [
 		dataType: 'FLOAT',
 	},
 ]);
-const render = gpgpu.initProgram('render', renderShaderSource, [
+const render = glcompute.initProgram('render', renderShaderSource, [
 	{
 		name: 'u_state',
 		value: 0,
 		dataType: 'INT',
 	},
 ]);
-const interaction = gpgpu.initProgram('interaction', interactionShaderSource, [
+const interaction = glcompute.initProgram('interaction', interactionShaderSource, [
 	{
 		name: 'u_noiseLookup',
 		value: 0,
@@ -44,12 +44,12 @@ function makeRandomArray(length: number, probability = 0.1) {
 }
 
 // Init state.
-const state = gpgpu.initDataLayer('state', {
-	width: canvas.clientWidth,
-	height: canvas.clientHeight,
+const state = glcompute.initDataLayer('state', {
+	dimensions: [canvas.clientWidth, canvas.clientHeight],
 	type: 'uint8',
-	numChannels: 1,
+	numComponents: 1,
 	data: makeRandomArray(canvas.clientWidth * canvas.clientHeight),
+	filter: 'NEAREST',
 }, true, 2); // Use two buffers, one for this state, one for last state.
 onResize();
 window.addEventListener('resize', onResize);
@@ -57,31 +57,31 @@ function onResize() {
 	// Re-init textures at new size.
 	const width = canvas.clientWidth;
 	const height = canvas.clientHeight;
-	state.resize(width, height, makeRandomArray(width * height));
+	state.resize([width, height], makeRandomArray(width * height));
 	gol.setUniform('u_pxSize', [1 / width, 1 / height], 'FLOAT');
-	gpgpu.onResize(canvas);
+	glcompute.onResize(canvas);
 }
 
 // Set up interactions.
 const TOUCH_RADIUS = 10;
 // Create a lookup texture for adding noise on interaction.
-const noise = gpgpu.initDataLayer('noise',
+const noise = glcompute.initDataLayer('noise',
 	{
-		width: TOUCH_RADIUS * 2,
-		height: TOUCH_RADIUS * 2,
+		dimensions: [TOUCH_RADIUS * 2, TOUCH_RADIUS * 2],
 		type: 'uint8',
-		numChannels: 1,
+		numComponents: 1,
 		data: makeRandomArray(4 * TOUCH_RADIUS * TOUCH_RADIUS, 0.5),
+		filter: 'NEAREST',
 	},
 );
 canvas.addEventListener('mousemove', (e: MouseEvent) => {
-	gpgpu.stepCircle(interaction, [e.clientX, e.clientY], TOUCH_RADIUS, [noise], state);
+	glcompute.stepCircle(interaction, [e.clientX, canvas.clientHeight - e.clientY], TOUCH_RADIUS, [noise], state);
 });
 canvas.addEventListener('touchmove', (e: TouchEvent) => {
 	e.preventDefault();
 	for (let i = 0; i < e.touches.length; i++) {
 		const touch = e.touches[i];
-		gpgpu.stepCircle(interaction, [touch.pageX, touch.pageY], TOUCH_RADIUS, [noise], state);
+		glcompute.stepCircle(interaction, [touch.pageX, canvas.clientHeight - touch.pageY], TOUCH_RADIUS, [noise], state);
 	}
 });
 // Disable other gestures.
@@ -102,9 +102,9 @@ function disableZoom(e: Event) {
 window.requestAnimationFrame(step);
 function step() {
 	// Compute rules.
-	gpgpu.step(gol, [state], state);
+	glcompute.step(gol, [state], state);
 	// Render current state.
-	gpgpu.step(render, [state]);
+	glcompute.step(render, [state]);
 	// Start a new render cycle.
 	window.requestAnimationFrame(step);
 }

@@ -20,7 +20,7 @@
   },
   "homepage": "https://github.com/amandaghassaei/ConwayShader#readme",
   "dependencies": {
-    "webgl-gpgpu": "git+https://github.com/amandaghassaei/webgl-gpgpu.git"
+    "glcompute": "github:amandaghassaei/glcompute#66d3be9"
   },
   "devDependencies": {
     "ts-loader": "^8.0.9",
