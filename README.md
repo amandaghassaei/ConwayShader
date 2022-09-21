@@ -1,3 +1,6 @@
+**Update: This code has been deprecated and replaced by the following repo: https://github.com/amandaghassaei/gpu-io/tree/main/examples/gol**
+
+
 # ConwayShader
 WebGL Shader for Conway's Game of Life.
 
